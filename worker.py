@@ -4,8 +4,12 @@ import time
 import os
 import db
 
-# Configure logging for the worker
-# This is separate from the CLI's logging
+# ---------------------------------------------------------------------
+# Worker Logging Configuration
+# ---------------------------------------------------------------------
+# This logger is dedicated to the background worker process.
+# It operates independently from the CLI logger to ensure separation
+# of runtime and operational logs.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [WORKER] [%(levelname)s] %(message)s",
@@ -14,11 +18,16 @@ logging.basicConfig(
 
 def execute_job(job: db.sqlite3.Row) -> int:
     """
-    Executes the job's command in a subprocess.
-    
+    Execute a job command as a subprocess.
+
+    Args:
+        job: A database row object containing the job details.
+
     Returns:
-        The exit code (return code) of the subprocess.
-        0 for success, non-zero for failure.
+        int: The subprocess exit code.
+             0 indicates success; any non-zero value indicates failure.
+             -1 indicates a timeout.
+             -2 indicates an unexpected exception.
     """
     job_id = job['id']
     command = job['command']
@@ -26,16 +35,16 @@ def execute_job(job: db.sqlite3.Row) -> int:
     logging.info(f"Running job {job_id}: {command}")
     
     try:
-        # DANGER: shell=True is a security risk if the command comes
-        # from an untrusted source. For this assignment, it's
-        # necessary to interpret commands like "echo 'Hello'".
-        # In a real-world app, we'd parse the command and args.
+        # Note:
+        # Using shell=True introduces a security risk if commands
+        # originate from untrusted sources. It’s used here solely
+        # to handle commands like "echo 'Hello'" for this assignment.
         result = subprocess.run(
             command,
             shell=True,
-            capture_output=True,  # Capture stdout/stderr
+            capture_output=True,  # Capture both stdout and stderr
             text=True,
-            timeout=3600  # 1-hour timeout (good practice)
+            timeout=3600  # Enforce a 1-hour execution limit
         )
         
         if result.returncode == 0:
@@ -49,54 +58,61 @@ def execute_job(job: db.sqlite3.Row) -> int:
 
     except subprocess.TimeoutExpired:
         logging.error(f"Job {job_id} timed out.")
-        return -1  # Use a custom code for timeout
+        return -1  # Timeout indicator
     except Exception as e:
         logging.error(f"Job {job_id} failed with exception: {e}")
-        return -2  # Use a custom code for other exceptions
+        return -2  # Generic failure indicator
 
-
-# ... (execute_job function) ...
 
 def process_job(job: db.sqlite3.Row):
     """
-    Fetches, executes, and updates a job.
-    This version includes retry and DLQ logic.
+    Handles the end-to-end job lifecycle:
+    - Executes the job command.
+    - Updates its status in the database based on outcome.
+    - Applies retry or dead-letter queue logic if applicable.
     """
     return_code = execute_job(job)
     
     if return_code == 0:
-        # Job was successful
+        # Job executed successfully
         db.update_job_status(job['id'], 'completed')
     else:
-        # Job failed, use our new failure logic
+        # Job failed — delegate retry or DLQ handling to DB logic
         new_state = db.update_job_on_failure(job)
-        logging.info(f"Job {job['id']} failed and was moved to state '{new_state}'")
+        logging.info(f"Job {job['id']} failed and moved to state '{new_state}'")
 
-# ... (start_worker function) ...
 
 def start_worker():
     """
-    The main worker loop.
-    Continuously polls the database for new jobs.
-    Includes a graceful shutdown mechanism.
+    Main worker loop responsible for continuously polling and executing jobs.
+
+    Features:
+    - Graceful shutdown support using a stop file.
+    - Periodic polling for new jobs.
+    - Basic error handling and backoff strategy.
     """
     logging.info("Worker starting... (PID: %s)", os.getpid())
     
-    # --- Graceful Shutdown Check ---
-    # Check for the stop file *before* starting the loop
+    # -----------------------------------------------------------------
+    # Check for shutdown signal before entering the loop.
+    # If a stop file exists, remove it and exit immediately.
+    # -----------------------------------------------------------------
     if db.STOP_FILE_PATH.exists():
-        logging.info("Stop file found on startup. Deleting and exiting.")
-        db.STOP_FILE_PATH.unlink() # Delete it so we don't block next start
-        return # Exit immediately
+        logging.info("Stop file found on startup. Removing and exiting.")
+        db.STOP_FILE_PATH.unlink()
+        return
 
+    # -----------------------------------------------------------------
+    # Continuous polling loop.
+    # -----------------------------------------------------------------
     while True:
-        # --- 1. Check for Stop Signal ---
+        # --- 1. Check for graceful shutdown signal ---
         if db.STOP_FILE_PATH.exists():
             logging.info("Stop file detected. Shutting down gracefully...")
-            db.STOP_FILE_PATH.unlink() # Clean up the file
-            break # Exit the loop
+            db.STOP_FILE_PATH.unlink()
+            break
 
-        # --- 2. Process Job (existing logic) ---
+        # --- 2. Attempt to fetch and process a pending job ---
         job = None
         try:
             job = db.fetch_pending_job()
@@ -104,21 +120,23 @@ def start_worker():
             if job:
                 process_job(job)
             else:
-                # No job found, wait a bit before polling again
-                logging.debug("No jobs found. Sleeping for 1s.")
+                # No available jobs; short sleep before polling again
+                logging.debug("No pending jobs found. Sleeping for 1s.")
                 time.sleep(1)
                 
         except Exception as e:
+            # Capture any unexpected runtime errors in the worker loop
             logging.error(f"Unhandled error in worker loop: {e}")
             if job:
-                # Try to mark the job as failed so it doesn't get stuck
+                # Ensure failed job is not left in a pending state
                 db.update_job_status(job['id'], 'failed')
-            time.sleep(5) # Back off on major errors
+            # Apply a brief backoff before retrying
+            time.sleep(5)
 
     logging.info("Worker (PID: %s) has shut down.", os.getpid())
 
+
 if __name__ == "__main__":
-    import os
-    # We must initialize the DB from the worker too
+    # Ensure database is initialized before starting the worker
     db.initialize_database()
     start_worker()
