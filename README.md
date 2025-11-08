@@ -26,7 +26,7 @@ The assignment allowed for JSON or SQLite. **SQLite was chosen** because it is a
 
 3. **Concurrency:** SQLite's WAL (Write-Ahead Logging) mode is enabled, allowing many workers to read and write to the database concurrently and safely.
 
-### 🔄 Job Lifecycle
+###  Job Lifecycle
 
 Jobs move through a defined set of states. The retry and backoff logic is handled automatically by the worker.
 
@@ -99,21 +99,21 @@ All commands are run from the main CLI.
 ```bash
 # Enqueue a simple job with a custom ID
 $ python queuectl.py enqueue "sleep 3; echo 'job done'" --id "sleepy-job"
-✅ Successfully enqueued job:
+ Successfully enqueued job:
    ID: sleepy-job
    Command: sleep 3; echo 'job done'
    Max Retries: 3
 
 # Enqueue a job that will fail (uses config default retries)
 $ python queuectl.py enqueue "cat /no/file/here" --id "fail-job"
-✅ Successfully enqueued job:
+ Successfully enqueued job:
    ID: fail-job
    Command: cat /no/file/here
    Max Retries: 3
 
 # Enqueue a job with a custom retry count
 $ python queuectl.py enqueue "flaky-script.sh" --id "flaky-1" --max-retries 5
-✅ Successfully enqueued job:
+ Successfully enqueued job:
    ID: flaky-1
    Command: flaky-script.sh
    Max Retries: 5
@@ -231,12 +231,12 @@ $ python queuectl.py list
 # Set the default max retries for all *new* jobs to 5
 $ python queuectl.py config set max_retries 5
 Setting config: max_retries = 5
-✅ Config updated successfully.
+Config updated successfully.
 
 # Set the exponential backoff base (e.g., 3^attempts)
 $ python queuectl.py config set backoff_base 3
 Setting config: backoff_base = 3
-✅ Config updated successfully.
+Config updated successfully.
 ```
 
 ---
