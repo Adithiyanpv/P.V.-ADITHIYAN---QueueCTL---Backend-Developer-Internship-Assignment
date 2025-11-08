@@ -6,7 +6,7 @@
 
 ---
 
-## 🏛️ Architecture Overview
+##  Architecture Overview
 
 The system is composed of three main Python components:
 
@@ -215,7 +215,7 @@ Listing jobs in Dead Letter Queue (state='dead')...
 # Retry a specific job from the DLQ
 $ python queuectl.py dlq retry "fail-job"
 Attempting to retry job fail-job...
-✅ Success: Job fail-job moved to 'pending' state.
+Success: Job fail-job moved to 'pending' state.
 
 # Verify it's back in pending
 $ python queuectl.py list
@@ -241,7 +241,7 @@ Config updated successfully.
 
 ---
 
-## 🧪 Testing Instructions
+##  Testing Instructions
 
 A shell script is provided to validate the core end-to-end flows. This script will clean the database, enqueue jobs, run a worker, wait for a job to fail and move to the DLQ, and then retry that job.
 
@@ -263,7 +263,7 @@ You can also monitor the worker.log file in another terminal (`tail -f worker.lo
 
 ---
 
-## ⚖️ Assumptions & Trade-offs
+##  Assumptions & Trade-offs
 
 * **CLI Usability:** The spec suggested enqueue '{"json": "..."}'. I implemented a more user-friendly flag-based command: `enqueue "command" --id "..."`. This is a common-sense UX improvement.
 
