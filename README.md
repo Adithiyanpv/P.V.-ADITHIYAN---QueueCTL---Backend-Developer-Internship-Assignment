@@ -1,6 +1,6 @@
 # queuectl: Background Job Queue CLI
 
-## Candidate Nmae: P.V. ADITHIYAN
+## Candidate Name: P.V. ADITHIYAN
 ## Candidate Roll number: CH.EN.U4AIE22003
 ## Candidate email id: adithiyan999@gmail.com
 
