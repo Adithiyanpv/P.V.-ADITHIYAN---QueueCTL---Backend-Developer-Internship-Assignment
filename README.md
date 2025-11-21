@@ -53,7 +53,7 @@ Jobs move through a defined set of states. The retry and backoff logic is handle
 
 5. **DLQ Retry:** A user can manually retry a `dead` job, which resets its `attempts` and moves it back to `pending`.
 
-### ⚙️ Worker Management
+### Worker Management
 
 * **`queuectl worker start --count N`** launches `N` new worker processes using `multiprocessing.Process`.
 
