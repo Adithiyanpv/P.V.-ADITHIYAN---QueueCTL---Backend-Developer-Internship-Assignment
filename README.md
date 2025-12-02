@@ -270,7 +270,7 @@ You can also monitor the worker.log file in another terminal (`tail -f worker.lo
 
 ##  Assumptions & Trade-offs
 
-* **CLI Usability:** The spec suggested enqueue '{"json": "..."}'. I implemented a more user-friendly flag-based command: `enqueue "command" --id "..."`. This is a common-sense UX improvement.
+* **CLI Usability:** The spec suggested enqueue '{"json": "..."}'. I implemented a more user-friendly flag-based command: `enqueue "command" --id "..."`.
 
 * **shell=True:** The `subprocess.run` command uses `shell=True`. This is a security risk if the command source is untrusted, but it's necessary to correctly parse string commands like `"sleep 3; echo 'done'"`.
 
