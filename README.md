@@ -1,10 +1,8 @@
 # queuectl: Background Job Queue CLI
 
-## Candidate Name: P.V. ADITHIYAN
-## Candidate Roll number: CH.EN.U4AIE22003
-## Candidate email id: adithiyan999@gmail.com
 
-`queuectl` is a CLI-based background job queue system built in Python, as per the FLAM Backend Developer Internship Assignment. It manages background jobs with worker processes, handles retries using exponential backoff, and maintains a Dead Letter Queue (DLQ).
+
+`queuectl` is a CLI-based background job queue system built in Python. It manages background jobs with worker processes, handles retries using exponential backoff, and maintains a Dead Letter Queue (DLQ).
 
 **[Click here to view the working demo and the source code of the CLI tool](https://drive.google.com/drive/folders/12Rk69RXsjGxjoYT2ZP_Q4EUis3QDCS8-?usp=sharing)**
 
